@@ -38,6 +38,8 @@ dependencies:
   flutter_svg: ^2.2.0
   xml: ^6.5.0
   url_launcher: ^6.1.12
+  firebase_core: ^2.15.0
+  cloud_firestore: ^4.8.2
 
 dev_dependencies:
   flutter_test:
@@ -68,6 +70,12 @@ flutter:
     - assets/logos/
     - assets/guides/
     - assets/svg/
+    - assets/svg/convergence_hall/
+    - assets/svg/baekun_hall/
+    - assets/svg/changjo_hall/
+    - assets/svg/cheongsong_hall/
+    - assets/svg/jeongui_hall/
+    - assets/svg/mirae_hall/
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images
 

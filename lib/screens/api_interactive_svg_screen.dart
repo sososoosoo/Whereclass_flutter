@@ -6,6 +6,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:vector_math/vector_math_64.dart' show Vector3;
 import 'package:whc_proto/services/api_service.dart';
 import 'package:whc_proto/widgets/polygon_tap_area.dart';
+import 'package:http/http.dart' as http;
 
 class ApiInteractiveSvgScreen extends StatefulWidget {
   final String buildingName;
@@ -96,21 +97,47 @@ class _ApiInteractiveSvgScreenState extends State<ApiInteractiveSvgScreen> {
                 floorData['clickable_areas'] as Map<String, dynamic>? ?? {};
             _roomShapes = clickableAreas.values.toList();
 
-            // Create a simple SVG for now (until we have actual SVG files served from API)
-            svgContent = '''
-              <svg width="1000" height="800" viewBox="0 0 1000 800" xmlns="http://www.w3.org/2000/svg">
-                <rect width="1000" height="800" fill="#f9f9f9" stroke="#ddd" stroke-width="2"/>
-                <text x="500" y="400" text-anchor="middle" fill="#333" font-size="24" font-weight="bold">
-                  ${buildingId.replaceAll('_', ' ').toUpperCase()} - ${floorNum}층
-                </text>
-                <text x="500" y="430" text-anchor="middle" fill="#666" font-size="16">
-                  API 연결: ${apiResponse != null ? '성공 ✓' : '연결중...'}
-                </text>
-                <text x="500" y="450" text-anchor="middle" fill="#666" font-size="14">
-                  클릭 가능한 방: ${_roomShapes?.length ?? 0}개
-                </text>
-              </svg>
-            ''';
+            // Load SVG file from web server
+            try {
+              // Debug: Print what we're working with
+              debugPrint('Building ID: $buildingId');
+              debugPrint('Floor Name: ${widget.floorName}');
+              debugPrint('Floor Number: $floorNum');
+
+              // Construct SVG URL for web server
+              final svgFileName = '${buildingId}_floor_${floorNum}.svg';
+              final svgUrl = '/svg/$buildingId/$svgFileName';
+              debugPrint('HTTP SVG 로드 시도: $svgUrl');
+
+              // Load SVG via HTTP
+              final response = await http.get(Uri.parse(svgUrl));
+              if (response.statusCode == 200) {
+                svgContent = response.body;
+                debugPrint('SVG 로드 성공: ${svgContent!.length} characters');
+              } else {
+                throw Exception('HTTP ${response.statusCode}: ${response.reasonPhrase}');
+              }
+            } catch (e) {
+              debugPrint('SVG 파일 로드 실패: $e');
+              // Fallback to placeholder SVG
+              svgContent = '''
+                <svg width="1000" height="800" viewBox="0 0 1000 800" xmlns="http://www.w3.org/2000/svg">
+                  <rect width="1000" height="800" fill="#f9f9f9" stroke="#ddd" stroke-width="2"/>
+                  <text x="500" y="380" text-anchor="middle" fill="#333" font-size="24" font-weight="bold">
+                    ${buildingId.replaceAll('_', ' ').toUpperCase()} - ${floorNum}층
+                  </text>
+                  <text x="500" y="410" text-anchor="middle" fill="#666" font-size="16">
+                    API 연결: ${apiResponse != null ? '성공 ✓' : '연결중...'}
+                  </text>
+                  <text x="500" y="430" text-anchor="middle" fill="#666" font-size="14">
+                    클릭 가능한 방: ${_roomShapes?.length ?? 0}개
+                  </text>
+                  <text x="500" y="460" text-anchor="middle" fill="#e74c3c" font-size="12">
+                    SVG 파일 로드 실패: $e
+                  </text>
+                </svg>
+              ''';
+            }
           }
         }
       } catch (e) {
