@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:whc_proto/floor_maps/floor_map_button.dart';
 import 'package:whc_proto/methods/current_location.dart';
 import 'package:whc_proto/building_class.dart';
-import 'package:whc_proto/screens/interactive_svg_screen.dart';
+import 'package:whc_proto/screens/api_interactive_svg_screen.dart';
 
 class MapScreen extends StatefulWidget {
   const MapScreen({super.key});
@@ -55,8 +55,8 @@ class _MapScreenState extends State<MapScreen> {
               ),
               SizedBox(height: 16.0),
               Expanded(
-                // InteractiveSvgScreen의 핵심 위젯 사용
-                child: InteractiveSvgScreen(
+                // ApiInteractiveSvgScreen의 핵심 위젯 사용
+                child: ApiInteractiveSvgScreen(
                   key: ValueKey(
                       '${getBuildingId(loc.curBuildingName)}_${loc.curFloorNum}'),
                   buildingName: getBuildingId(loc.curBuildingName),

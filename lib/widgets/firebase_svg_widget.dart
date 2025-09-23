@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:whc_proto/services/firebase_svg_service.dart';
+// import 'package:whc_proto/services/firebase_svg_service.dart'; // Firebase 제거됨
 import 'package:whc_proto/widgets/polygon_tap_area.dart';
 import 'dart:convert';
 import 'package:flutter/services.dart' show rootBundle;
@@ -54,14 +54,14 @@ class _FirebaseSvgWidgetState extends State<FirebaseSvgWidget> {
     });
 
     try {
-      // Firebase에서 실제 SVG 데이터 로드
-      final buildingId =
-          FirebaseSvgService.getBuildingCollectionId(widget.buildingName);
-      final documentId =
-          FirebaseSvgService.generateDocumentId(buildingId, widget.floorNum);
+      // Firebase 제거됨 - 더 이상 사용하지 않음
+      // final buildingId = FirebaseSvgService.getBuildingCollectionId(widget.buildingName);
+      // final documentId = FirebaseSvgService.generateDocumentId(buildingId, widget.floorNum);
+      // final svgData = await FirebaseSvgService.getSvgData(buildingId, documentId);
 
-      final svgData =
-          await FirebaseSvgService.getSvgData(buildingId, documentId);
+      const buildingId = '';
+      const documentId = '';
+      String? svgData;
 
       // Load room shapes from unified JSON
       List<dynamic>? roomShapes;

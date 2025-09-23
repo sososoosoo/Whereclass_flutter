@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:whc_proto/building_class.dart';
 import 'package:whc_proto/methods/create_main_building_button.dart';
 import 'package:whc_proto/methods/screen_controller.dart';
+import 'package:whc_proto/screens/api_test_screen.dart';
 
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
@@ -57,6 +58,33 @@ class _MainScreenState extends State<MainScreen> {
               ),
             ),
             
+            // API 테스트 버튼 추가
+            Container(
+              margin: const EdgeInsets.all(16.0),
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (context) => const ApiTestScreen(),
+                    ),
+                  );
+                },
+                icon: const Icon(Icons.api, color: Colors.white),
+                label: const Text(
+                  '🚀 API 백엔드 테스트 (Firebase → Spring Boot)',
+                  style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.green,
+                  padding: const EdgeInsets.all(16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+              ),
+            ),
+
             // 기존 건물 버튼들 유지
             SingleChildScrollView(
               scrollDirection: Axis.vertical,

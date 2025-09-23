@@ -1,16 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:firebase_core/firebase_core.dart';
-import 'package:whc_proto/firebase_options.dart';
 import 'package:whc_proto/methods/screen_controller.dart';
 import 'package:whc_proto/widgets/appBar/appBarRouter.dart';
 import 'package:whc_proto/theme/app_theme.dart';
-// import 'package:whc_proto/screens/interactive_svg_screen.dart'; // 임시 주석처리
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
+  // Firebase 초기화 제거 - 이제 API 서버 사용
   runApp(const MyApp());
 }
 

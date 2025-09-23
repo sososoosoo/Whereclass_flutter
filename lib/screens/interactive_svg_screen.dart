@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:whc_proto/methods/room_search_enum.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+// import 'package:cloud_firestore/cloud_firestore.dart'; // Firebase 제거됨
 import 'package:vector_math/vector_math_64.dart' show Vector3;
 import 'package:url_launcher/url_launcher.dart';
 
@@ -122,7 +122,7 @@ class _InteractiveSvgScreenState extends State<InteractiveSvgScreen> {
   Map<String, dynamic>? svgData;
   Map<String, dynamic>? currentFloorData;
   String? svgContent; // Firestore에서 가져온 SVG 콘텐츠
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  // final FirebaseFirestore _firestore = FirebaseFirestore.instance; // Firebase 제거됨
   bool isLoading = false;
   String? selectedRoomId;
   RoomData? selectedRoomData;
@@ -396,12 +396,14 @@ class _InteractiveSvgScreenState extends State<InteractiveSvgScreen> {
       // 각 컬렉션에서 SVG 데이터 찾기
       for (String collectionName in collections) {
         try {
-          final DocumentSnapshot doc = await _firestore
-              .collection(collectionName)
-              .doc(svgDocumentId)
-              .get();
+          // Firebase 제거됨 - 임시로 빈 결과 반환
+          // final DocumentSnapshot doc = await _firestore
+          //     .collection(collectionName)
+          //     .doc(svgDocumentId)
+          //     .get();
+          final doc = null; // 임시 처리
 
-          if (doc.exists && doc.data() != null) {
+          if (doc != null && doc.exists && doc.data() != null) {
             final data = doc.data() as Map<String, dynamic>;
             if (data.containsKey('svg_data')) {
               svgContent = data['svg_data'] as String;
@@ -425,14 +427,16 @@ class _InteractiveSvgScreenState extends State<InteractiveSvgScreen> {
       setState(() => isLoading = true);
 
       for (String collectionName in collections) {
-        final QuerySnapshot querySnapshot = await _firestore
-            .collection(collectionName)
-            .where('uniqueId', isEqualTo: uniqueId)
-            .limit(1)
-            .get();
+        // Firebase 제거됨 - 임시로 빈 결과 반환
+        // final QuerySnapshot querySnapshot = await _firestore
+        //     .collection(collectionName)
+        //     .where('uniqueId', isEqualTo: uniqueId)
+        //     .limit(1)
+        //     .get();
 
-        if (querySnapshot.docs.isNotEmpty) {
-          final DocumentSnapshot doc = querySnapshot.docs.first;
+        final querySnapshot = null; // 임시 처리
+        if (querySnapshot != null && querySnapshot.docs.isNotEmpty) {
+          final doc = querySnapshot.docs.first;
           final data = doc.data() as Map<String, dynamic>;
           return RoomData.fromFirestore(data);
         }

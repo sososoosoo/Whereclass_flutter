@@ -1,5 +1,5 @@
 import 'dart:async';
-import 'package:cloud_firestore/cloud_firestore.dart';
+// import 'package:cloud_firestore/cloud_firestore.dart'; // Firebase 제거됨
 import 'package:flutter/material.dart';
 import 'package:whc_proto/building_class.dart';
 import 'package:whc_proto/methods/current_location.dart';
@@ -145,12 +145,14 @@ class _SearchScreenState extends State<SearchScreen> {
     if (foundPrefix != null && roomPart != null && roomPart.isNotEmpty) {
       final collection = prefixMap[foundPrefix];
       final uniqueId = '${collection}_$roomPart';
-      final doc = await FirebaseFirestore.instance
-          .collection(collection!)
-          .where('uniqueId', isEqualTo: uniqueId)
-          .limit(1)
-          .get();
-      if (doc.docs.isNotEmpty) {
+      // Firebase 제거됨 - 임시로 빈 결과 반환
+      // final doc = await FirebaseFirestore.instance
+      //     .collection(collection!)
+      //     .where('uniqueId', isEqualTo: uniqueId)
+      //     .limit(1)
+      //     .get();
+      final doc = null; // 임시 처리
+      if (doc != null && doc.docs.isNotEmpty) {
         final data = doc.docs.first.data();
         final room = RoomData.fromFirestore(data);
         setState(() {

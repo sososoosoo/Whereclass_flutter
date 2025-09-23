@@ -1,8 +1,8 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
+// import 'package:cloud_firestore/cloud_firestore.dart'; // Firebase 제거됨
 import 'package:flutter/foundation.dart';
 
 class FirebaseSvgService {
-  static final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  // static final FirebaseFirestore _firestore = FirebaseFirestore.instance; // Firebase 제거됨
 
   /// 건물명을 Firebase 컬렉션 ID로 변환
   static String getBuildingCollectionId(String buildingName) {
@@ -23,13 +23,17 @@ class FirebaseSvgService {
     return '${buildingId}_floor_$floorNum';
   }
 
-  /// Firebase에서 SVG 데이터 가져오기
+  /// Firebase에서 SVG 데이터 가져오기 (Firebase 제거됨)
   static Future<String?> getSvgData(
       String buildingId, String documentId) async {
     try {
+      // Firebase 제거됨 - 임시로 null 반환
+      debugPrint('Firebase 제거됨: $buildingId/$documentId');
+      return null;
+
       // 첫 번째 시도: 직접 컬렉션에서 문서 가져오기
-      var docRef = _firestore.collection(buildingId).doc(documentId);
-      var docSnapshot = await docRef.get();
+      // var docRef = _firestore.collection(buildingId).doc(documentId);
+      // var docSnapshot = await docRef.get();
 
       if (docSnapshot.exists) {
         final data = docSnapshot.data();
