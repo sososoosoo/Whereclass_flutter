@@ -70,3 +70,6 @@ node_modules/
 
 # Backend project (separate repository)
 whereclass-backend/
+
+# Claude Code settings
+.claude/
