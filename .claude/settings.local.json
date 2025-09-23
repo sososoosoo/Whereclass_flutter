@@ -1,0 +1,19 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(mysql:*)",
+      "Bash(where mysql)",
+      "Bash(wmic:*)",
+      "Bash(\"C:\\Program Files\\MySQL\\MySQL Server 8.0\\bin\\mysql.exe\" -u root -p -e \"USE whereclass; SHOW TABLES;\")",
+      "Bash(mkdir:*)",
+      "Bash(mvn clean:*)",
+      "Bash(java:*)",
+      "Bash(./gradlew.bat build:*)",
+      "WebFetch(domain:services.gradle.org)",
+      "Bash(curl:*)",
+      "Bash(./gradlew.bat:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}
