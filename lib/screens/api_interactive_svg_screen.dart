@@ -6,6 +6,8 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:vector_math/vector_math_64.dart' show Vector3;
 import 'package:whc_proto/services/api_service.dart';
 import 'package:whc_proto/widgets/polygon_tap_area.dart';
+import 'package:whc_proto/widgets/room_info_modal.dart';
+import 'package:whc_proto/screens/interactive_svg_screen.dart'; // RoomData 클래스 import
 import 'package:http/http.dart' as http;
 import 'package:url_launcher/url_launcher.dart';
 
@@ -34,6 +36,7 @@ class _ApiInteractiveSvgScreenState extends State<ApiInteractiveSvgScreen> {
   bool _isModalVisible = true;
   List<dynamic>? _roomShapes;
   String? _errorMessage;
+  RoomData? _selectedRoomData;
 
   @override
   void initState() {
@@ -209,86 +212,45 @@ class _ApiInteractiveSvgScreenState extends State<ApiInteractiveSvgScreen> {
   }
 
   void _onRoomTap(String roomId, Map<String, dynamic> roomInfo) {
-    setState(() {
-      selectedRoomId = roomId;
-    });
-
     debugPrint('Room tapped: $roomId');
 
-    if (mounted) {
-      showDialog(
-        context: context,
-        builder: (BuildContext context) {
-          String buildingName = _getBuildingDisplayName(widget.buildingName);
-          String roomNumber = roomId.split('_').last;
+    // RoomData 객체 생성
+    String buildingName = _getBuildingDisplayName(widget.buildingName);
+    String roomNumber = roomId.split('_').last;
+    String roomType = _getRoomType(roomId);
 
-          return AlertDialog(
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-            title: const Text(
-              "강의실 정보",
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  '$buildingName $roomNumber호',
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-                const SizedBox(height: 12),
-                const Text(
-                  '실시간 강의정보',
-                  style: TextStyle(
-                      fontSize: 14, fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 4),
-                const Text(
-                  '현재 강의가 없습니다.', // Placeholder
-                  style: TextStyle(fontSize: 14, color: Colors.grey),
-                ),
-              ],
-            ),
-            actions: [
-              TextButton(
-                onPressed: () async {
-                  Navigator.of(context).pop();
-                  final url = Uri.parse('https://docs.google.com/forms/d/e/1FAIpQLScS2AD120g5Yy21ASfA24A0--sC2l_e35-Bv2_A49h7-n1lMA/viewform');
-                  if (await canLaunchUrl(url)) {
-                    await launchUrl(url, mode: LaunchMode.externalApplication);
-                  } else {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('제보 페이지를 열 수 없습니다.'),
-                      ),
-                    );
-                  }
-                },
-                child: const Text('정보 수정 제보'),
-              ),
-              TextButton(
-                onPressed: () {
-                  Navigator.of(context).pop();
-                },
-                child: const Text('닫기'),
-              ),
-            ],
-          );
-        },
-      ).then((_) {
-        setState(() {
-          selectedRoomId = null;
-        });
-      });
-    }
+    RoomData roomData = RoomData(
+      buildingNameEn: widget.buildingName,
+      buildingNameKo: buildingName,
+      floor: widget.floorName,
+      notes: '',
+      roomNameKo: roomType.isNotEmpty ? roomType : '강의실',
+      roomNumber: roomNumber,
+      roomType: roomType,
+      searchKeywords: '',
+      svgFilename: '',
+      uniqueId: roomId,
+    );
+
+    setState(() {
+      selectedRoomId = roomId;
+      _selectedRoomData = roomData;
+      _isModalVisible = true;
+    });
+  }
+
+  void _hideModal() {
+    setState(() {
+      _isModalVisible = false;
+    });
+  }
+
+  void _closeModal() {
+    setState(() {
+      selectedRoomId = null;
+      _selectedRoomData = null;
+      _isModalVisible = true;
+    });
   }
 
   String _getRoomType(String roomId) {
@@ -369,7 +331,9 @@ class _ApiInteractiveSvgScreenState extends State<ApiInteractiveSvgScreen> {
     }
 
     return Scaffold(
-      body: InteractiveViewer(
+      body: Stack(
+        children: [
+          InteractiveViewer(
         transformationController: _transformationController,
         boundaryMargin: EdgeInsets.zero,
         minScale: 0.5,
@@ -443,6 +407,15 @@ class _ApiInteractiveSvgScreenState extends State<ApiInteractiveSvgScreen> {
             ],
           ),
         ),
+          ),
+          // 모달
+          RoomInfoModal(
+            roomData: _selectedRoomData,
+            isVisible: _isModalVisible,
+            onHide: _hideModal,
+            onClose: _closeModal,
+          ),
+        ],
       ),
     );
   }
