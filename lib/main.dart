@@ -1,15 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:firebase_core/firebase_core.dart';
-import 'package:whc_proto/firebase_options.dart';
 import 'package:whc_proto/methods/screen_controller.dart';
 import 'package:whc_proto/widgets/appBar/appBarRouter.dart';
 import 'package:whc_proto/theme/app_theme.dart';
 
-void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
+void main() {
   runApp(const MyApp());
 }
 

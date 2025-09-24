@@ -7,6 +7,7 @@ import 'package:vector_math/vector_math_64.dart' show Vector3;
 import 'package:whc_proto/services/api_service.dart';
 import 'package:whc_proto/widgets/polygon_tap_area.dart';
 import 'package:http/http.dart' as http;
+import 'package:url_launcher/url_launcher.dart';
 
 class ApiInteractiveSvgScreen extends StatefulWidget {
   final String buildingName;
@@ -92,10 +93,45 @@ class _ApiInteractiveSvgScreenState extends State<ApiInteractiveSvgScreen> {
           if (floorData != null) {
             currentFloorData = floorData;
 
-            // Extract clickable areas and convert to list format
-            final clickableAreas =
-                floorData['clickable_areas'] as Map<String, dynamic>? ?? {};
-            _roomShapes = clickableAreas.values.toList();
+            // Extract clickable areas and convert to proper format
+            final clickableAreas = floorData['clickable_areas'] as Map<String, dynamic>? ?? {};
+            _roomShapes = [];
+
+            clickableAreas.forEach((key, value) {
+              final room = value as Map<String, dynamic>;
+              final roomId = room['id'] as String?;
+              final displayName = room['display_name'] as String?;
+              final polygon = room['polygon'] as List?;
+
+              if (roomId != null && polygon != null && polygon.isNotEmpty) {
+                // Convert polygon coordinates to proper format
+                final List<List<double>> points = [];
+                for (var point in polygon) {
+                  if (point is Map<String, dynamic>) {
+                    final x = point['x']?.toDouble();
+                    final y = point['y']?.toDouble();
+                    if (x != null && y != null) {
+                      points.add([x, y]);
+                    }
+                  }
+                }
+
+                if (points.isNotEmpty) {
+                  _roomShapes!.add({
+                    'id': roomId,
+                    'display_name': displayName ?? roomId,
+                    'shapes': [
+                      {
+                        'type': 'polygon',
+                        'points': points,
+                      }
+                    ]
+                  });
+                }
+              }
+            });
+
+            debugPrint('Loaded ${_roomShapes!.length} clickable rooms for ${widget.floorName}');
 
             // Load SVG file from web server
             try {
@@ -175,40 +211,117 @@ class _ApiInteractiveSvgScreenState extends State<ApiInteractiveSvgScreen> {
   void _onRoomTap(String roomId, Map<String, dynamic> roomInfo) {
     setState(() {
       selectedRoomId = roomId;
-      _isModalVisible = true;
     });
 
     debugPrint('Room tapped: $roomId');
-    debugPrint('Room info: $roomInfo');
 
-    // Show room information dialog
     if (mounted) {
       showDialog(
         context: context,
         builder: (BuildContext context) {
+          String buildingName = _getBuildingDisplayName(widget.buildingName);
+          String roomNumber = roomId.split('_').last;
+
           return AlertDialog(
-            title: Text('강의실 정보'),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            title: const Text(
+              "강의실 정보",
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
             content: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('방 ID: $roomId'),
-                SizedBox(height: 8),
-                Text('상세 정보:'),
-                Text(roomInfo.toString()),
+                Text(
+                  '$buildingName $roomNumber호',
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                const Text(
+                  '실시간 강의정보',
+                  style: TextStyle(
+                      fontSize: 14, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 4),
+                const Text(
+                  '현재 강의가 없습니다.', // Placeholder
+                  style: TextStyle(fontSize: 14, color: Colors.grey),
+                ),
               ],
             ),
             actions: [
               TextButton(
+                onPressed: () async {
+                  Navigator.of(context).pop();
+                  final url = Uri.parse('https://docs.google.com/forms/d/e/1FAIpQLScS2AD120g5Yy21ASfA24A0--sC2l_e35-Bv2_A49h7-n1lMA/viewform');
+                  if (await canLaunchUrl(url)) {
+                    await launchUrl(url, mode: LaunchMode.externalApplication);
+                  } else {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('제보 페이지를 열 수 없습니다.'),
+                      ),
+                    );
+                  }
+                },
+                child: const Text('정보 수정 제보'),
+              ),
+              TextButton(
                 onPressed: () {
                   Navigator.of(context).pop();
                 },
-                child: Text('닫기'),
+                child: const Text('닫기'),
               ),
             ],
           );
         },
-      );
+      ).then((_) {
+        setState(() {
+          selectedRoomId = null;
+        });
+      });
+    }
+  }
+
+  String _getRoomType(String roomId) {
+    // Simple logic to determine room type based on room ID
+    if (roomId.contains('휴게') || roomId.toLowerCase().contains('lounge')) {
+      return '학생휴게실';
+    } else if (roomId.contains('화장실') || roomId.toLowerCase().contains('toilet')) {
+      return '화장실';
+    } else if (roomId.contains('엘리베이터') || roomId.toLowerCase().contains('elevator')) {
+      return '엘리베이터';
+    } else if (roomId.contains('void') || roomId.contains('???')) {
+      return '기타 공간';
+    } else {
+      return '강의실';
+    }
+  }
+
+  String _getBuildingDisplayName(String buildingId) {
+    switch (buildingId) {
+      case 'convergence_hall':
+        return '컨버전스홀';
+      case 'baekun_hall':
+        return '백운관';
+      case 'changjo_hall':
+        return '창조관';
+      case 'cheongsong_hall':
+        return '청송관';
+      case 'mirae_hall':
+        return '미래관';
+      case 'jeongui_hall':
+        return '정의관';
+      default:
+        return buildingId.replaceAll('_', ' ').toUpperCase();
     }
   }
 
@@ -258,9 +371,11 @@ class _ApiInteractiveSvgScreenState extends State<ApiInteractiveSvgScreen> {
     return Scaffold(
       body: InteractiveViewer(
         transformationController: _transformationController,
-        boundaryMargin: EdgeInsets.all(50),
-        minScale: 0.1,
-        maxScale: 10.0,
+        boundaryMargin: EdgeInsets.zero,
+        minScale: 0.5,
+        maxScale: 3.0,
+        panEnabled: false, // Disable pan/drag
+        scaleEnabled: true, // Keep zoom
         child: Container(
           width: double.infinity,
           height: double.infinity,
@@ -285,49 +400,42 @@ class _ApiInteractiveSvgScreenState extends State<ApiInteractiveSvgScreen> {
                   final shapes = room['shapes'] as List?;
                   if (shapes == null) return <Widget>[];
                   return shapes.map<Widget>((shape) {
-                    if (shape['type'] == 'rect') {
+                    if (shape['type'] == 'polygon' && shape['points'] != null) {
+                      final points = shape['points'] as List<dynamic>;
+
+                      // Calculate bounding box for this polygon
+                      double minX = double.infinity;
+                      double minY = double.infinity;
+                      double maxX = double.negativeInfinity;
+                      double maxY = double.negativeInfinity;
+
+                      for (var point in points) {
+                        double x = point[0].toDouble();
+                        double y = point[1].toDouble();
+                        minX = minX < x ? minX : x;
+                        minY = minY < y ? minY : y;
+                        maxX = maxX > x ? maxX : x;
+                        maxY = maxY > y ? maxY : y;
+                      }
+
+                      // For now, use a simple rectangular area for testing
                       return Positioned(
-                        left: shape['x']?.toDouble() ?? 0,
-                        top: shape['y']?.toDouble() ?? 0,
-                        width: shape['width']?.toDouble() ?? 0,
-                        height: shape['height']?.toDouble() ?? 0,
+                        left: minX,
+                        top: minY,
+                        width: maxX - minX,
+                        height: maxY - minY,
                         child: GestureDetector(
-                          onTap: () => _onRoomTap(id, shape),
+                          onTap: () {
+                            debugPrint('Clicked on room: $id');
+                            _onRoomTap(id, room);
+                          },
                           child: Container(
                             color: selectedRoomId == id
-                                ? Colors.blue.withOpacity(0.3)
-                                : Colors.transparent,
-                            child: Container(
-                              decoration: BoxDecoration(
-                                border: selectedRoomId == id
-                                    ? Border.all(color: Colors.blue, width: 2)
-                                    : null,
-                              ),
-                            ),
+                                ? Colors.blue.withOpacity(0.4)
+                                : Colors.transparent, // Make it invisible
                           ),
                         ),
                       );
-                    } else if (shape['type'] == 'polygon' &&
-                        shape['points'] != null) {
-                      final points = shape['points'] as List?;
-                      if (points != null) {
-                        return PolygonTapArea(
-                          points: List<List<double>>.from(
-                            points.map((p) => List<double>.from(p ?? [])),
-                          ),
-                          onTap: () => _onRoomTap(id, shape),
-                        );
-                      }
-                    } else if (shape['type'] == 'path' && shape['points'] != null) {
-                      final points = shape['points'] as List?;
-                      if (points != null) {
-                        return PolygonTapArea(
-                          points: List<List<double>>.from(
-                            points.map((p) => List<double>.from(p ?? [])),
-                          ),
-                          onTap: () => _onRoomTap(id, shape),
-                        );
-                      }
                     }
                     return const SizedBox.shrink();
                   });
@@ -335,41 +443,6 @@ class _ApiInteractiveSvgScreenState extends State<ApiInteractiveSvgScreen> {
             ],
           ),
         ),
-      ),
-      floatingActionButton: Column(
-        mainAxisAlignment: MainAxisAlignment.end,
-        children: [
-          FloatingActionButton(
-            heroTag: "zoom_in",
-            mini: true,
-            onPressed: () {
-              final matrix = Matrix4.copy(_transformationController.value);
-              matrix.scale(1.2);
-              _transformationController.value = matrix;
-            },
-            child: Icon(Icons.zoom_in),
-          ),
-          SizedBox(height: 8),
-          FloatingActionButton(
-            heroTag: "zoom_out",
-            mini: true,
-            onPressed: () {
-              final matrix = Matrix4.copy(_transformationController.value);
-              matrix.scale(0.8);
-              _transformationController.value = matrix;
-            },
-            child: Icon(Icons.zoom_out),
-          ),
-          SizedBox(height: 8),
-          FloatingActionButton(
-            heroTag: "reset",
-            mini: true,
-            onPressed: () {
-              _transformationController.value = Matrix4.identity();
-            },
-            child: Icon(Icons.refresh),
-          ),
-        ],
       ),
     );
   }
