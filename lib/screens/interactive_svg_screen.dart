@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:whc_proto/methods/room_search_enum.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-// import 'package:cloud_firestore/cloud_firestore.dart'; // Firebase 제거됨
 import 'package:vector_math/vector_math_64.dart' show Vector3;
 import 'package:url_launcher/url_launcher.dart';
 
@@ -122,7 +121,6 @@ class _InteractiveSvgScreenState extends State<InteractiveSvgScreen> {
   Map<String, dynamic>? svgData;
   Map<String, dynamic>? currentFloorData;
   String? svgContent; // Firestore에서 가져온 SVG 콘텐츠
-  // final FirebaseFirestore _firestore = FirebaseFirestore.instance; // Firebase 제거됨
   bool isLoading = false;
   String? selectedRoomId;
   RoomData? selectedRoomData;
@@ -396,7 +394,6 @@ class _InteractiveSvgScreenState extends State<InteractiveSvgScreen> {
       // 각 컬렉션에서 SVG 데이터 찾기
       for (String collectionName in collections) {
         try {
-          // Firebase 제거됨 - 임시로 빈 결과 반환
           // final DocumentSnapshot doc = await _firestore
           //     .collection(collectionName)
           //     .doc(svgDocumentId)
@@ -427,7 +424,6 @@ class _InteractiveSvgScreenState extends State<InteractiveSvgScreen> {
       setState(() => isLoading = true);
 
       for (String collectionName in collections) {
-        // Firebase 제거됨 - 임시로 빈 결과 반환
         // final QuerySnapshot querySnapshot = await _firestore
         //     .collection(collectionName)
         //     .where('uniqueId', isEqualTo: uniqueId)

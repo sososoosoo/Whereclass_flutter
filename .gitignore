@@ -73,3 +73,6 @@ whereclass-backend/
 
 # Claude Code settings
 .claude/
+
+# Windows 예약어인 nul 파일을 무시합니다.
+nul

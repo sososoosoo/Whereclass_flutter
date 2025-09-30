@@ -37,6 +37,8 @@ class _ApiInteractiveSvgScreenState extends State<ApiInteractiveSvgScreen> {
   List<dynamic>? _roomShapes;
   String? _errorMessage;
   RoomData? _selectedRoomData;
+  double _svgWidth = 2279.0;  // Default values
+  double _svgHeight = 1351.0;
 
   @override
   void initState() {
@@ -153,6 +155,9 @@ class _ApiInteractiveSvgScreenState extends State<ApiInteractiveSvgScreen> {
               if (response.statusCode == 200) {
                 svgContent = response.body;
                 debugPrint('SVG 로드 성공: ${svgContent!.length} characters');
+
+                // Parse SVG dimensions from the content
+                _parseSvgDimensions(svgContent!);
               } else {
                 throw Exception('HTTP ${response.statusCode}: ${response.reasonPhrase}');
               }
@@ -208,6 +213,27 @@ class _ApiInteractiveSvgScreenState extends State<ApiInteractiveSvgScreen> {
           isLoading = false;
         });
       }
+    }
+  }
+
+  void _parseSvgDimensions(String svgContent) {
+    try {
+      // Parse width and height from SVG tag
+      final RegExp widthPattern = RegExp(r'width="(\d+)"');
+      final RegExp heightPattern = RegExp(r'height="(\d+)"');
+
+      final widthMatch = widthPattern.firstMatch(svgContent);
+      final heightMatch = heightPattern.firstMatch(svgContent);
+
+      if (widthMatch != null && heightMatch != null) {
+        _svgWidth = double.parse(widthMatch.group(1)!);
+        _svgHeight = double.parse(heightMatch.group(1)!);
+        debugPrint('Parsed SVG dimensions: ${_svgWidth} x ${_svgHeight}');
+      } else {
+        debugPrint('Could not parse SVG dimensions, using defaults');
+      }
+    } catch (e) {
+      debugPrint('Error parsing SVG dimensions: $e');
     }
   }
 
@@ -357,53 +383,105 @@ class _ApiInteractiveSvgScreenState extends State<ApiInteractiveSvgScreen> {
                   ),
                 ),
               ),
-              // 클릭 가능한 영역들
-              if (_roomShapes != null)
-                ..._roomShapes!.expand((room) {
-                  final id = room['id'];
-                  final shapes = room['shapes'] as List?;
-                  if (shapes == null) return <Widget>[];
-                  return shapes.map<Widget>((shape) {
-                    if (shape['type'] == 'polygon' && shape['points'] != null) {
-                      final points = shape['points'] as List<dynamic>;
+              // 클릭 가능한 영역들 - LayoutBuilder로 실제 크기 계산
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  if (_roomShapes == null) return const SizedBox.shrink();
 
-                      // Calculate bounding box for this polygon
-                      double minX = double.infinity;
-                      double minY = double.infinity;
-                      double maxX = double.negativeInfinity;
-                      double maxY = double.negativeInfinity;
+                  // SVG 크기와 실제 표시 크기 계산 (동적으로 파싱된 값 사용)
+                  final double svgWidth = _svgWidth;
+                  final double svgHeight = _svgHeight;
+                  final double widgetWidth = constraints.maxWidth;
+                  final double widgetHeight = constraints.maxHeight;
 
-                      for (var point in points) {
-                        double x = point[0].toDouble();
-                        double y = point[1].toDouble();
-                        minX = minX < x ? minX : x;
-                        minY = minY < y ? minY : y;
-                        maxX = maxX > x ? maxX : x;
-                        maxY = maxY > y ? maxY : y;
-                      }
+                  // BoxFit.contain 계산
+                  final double svgAspectRatio = svgWidth / svgHeight;
+                  final double widgetAspectRatio = widgetWidth / widgetHeight;
 
-                      // For now, use a simple rectangular area for testing
-                      return Positioned(
-                        left: minX,
-                        top: minY,
-                        width: maxX - minX,
-                        height: maxY - minY,
-                        child: GestureDetector(
-                          onTap: () {
-                            debugPrint('Clicked on room: $id');
-                            _onRoomTap(id, room);
-                          },
-                          child: Container(
-                            color: selectedRoomId == id
-                                ? Colors.blue.withOpacity(0.4)
-                                : Colors.transparent, // Make it invisible
-                          ),
-                        ),
-                      );
-                    }
-                    return const SizedBox.shrink();
-                  });
-                }),
+                  double actualWidth, actualHeight;
+                  double offsetX = 0, offsetY = 0;
+
+                  if (svgAspectRatio > widgetAspectRatio) {
+                    // SVG가 더 넓음 - 너비에 맞춤
+                    actualWidth = widgetWidth;
+                    actualHeight = widgetWidth / svgAspectRatio;
+                    offsetY = (widgetHeight - actualHeight) / 2;
+                  } else {
+                    // SVG가 더 높음 - 높이에 맞춤
+                    actualHeight = widgetHeight;
+                    actualWidth = widgetHeight * svgAspectRatio;
+                    offsetX = (widgetWidth - actualWidth) / 2;
+                  }
+
+                  final double scaleX = actualWidth / svgWidth;
+                  final double scaleY = actualHeight / svgHeight;
+
+                  return Stack(
+                    children: _roomShapes!.expand((room) {
+                      final id = room['id'];
+                      final shapes = room['shapes'] as List?;
+                      if (shapes == null) return <Widget>[];
+                      return shapes.map<Widget>((shape) {
+                        if (shape['type'] == 'polygon' && shape['points'] != null) {
+                          final points = shape['points'] as List<dynamic>;
+
+                          // Calculate bounding box for debugging
+                          double minX = double.infinity;
+                          double minY = double.infinity;
+                          double maxX = double.negativeInfinity;
+                          double maxY = double.negativeInfinity;
+
+                          for (var point in points) {
+                            double x = point[0].toDouble();
+                            double y = point[1].toDouble();
+                            minX = minX < x ? minX : x;
+                            minY = minY < y ? minY : y;
+                            maxX = maxX > x ? maxX : x;
+                            maxY = maxY > y ? maxY : y;
+                          }
+
+                          // Transform to screen coordinates
+                          final double screenMinX = offsetX + (minX * scaleX);
+                          final double screenMinY = offsetY + (minY * scaleY);
+                          final double screenMaxX = offsetX + (maxX * scaleX);
+                          final double screenMaxY = offsetY + (maxY * scaleY);
+
+                          // Debug: Show bounding box with click functionality
+                          return Positioned(
+                            left: screenMinX,
+                            top: screenMinY,
+                            width: screenMaxX - screenMinX,
+                            height: screenMaxY - screenMinY,
+                            child: GestureDetector(
+                              onTap: () {
+                                debugPrint('Room clicked: $id');
+                                _onRoomTap(id, room);
+                              },
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  border: Border.all(color: Colors.green, width: 2),
+                                  color: Colors.green.withOpacity(0.1),
+                                ),
+                                child: Center(
+                                  child: Text(
+                                    id.split('_').last,
+                                    style: TextStyle(
+                                      color: Colors.black,
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          );
+                        }
+                        return const SizedBox.shrink();
+                      });
+                    }).toList(),
+                  );
+                },
+              ),
             ],
           ),
         ),
